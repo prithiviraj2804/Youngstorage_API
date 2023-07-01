@@ -49,7 +49,7 @@ def dockerGenerator(username: str, peer: str):
     return f'''FROM ubuntu:latest
 RUN apt-get update
 ARG S6_OVERLAY_VERSION=3.1.0.1
-RUN apt install -y openssh-server nano htop
+RUN apt install -y openssh-server nano htop lsof python3-pip
 RUN apt install -y sudo figlet lolcat bash-completion
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt install -y ufw net-tools netcat curl apache2
