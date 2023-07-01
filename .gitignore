@@ -5,3 +5,6 @@ venv
 .cache
 .idea
 .env
+*wgClients
+*setup.sh
+*Dockerfile
