@@ -1,15 +1,17 @@
-from fastapi import APIRouter
-from ..database import db
+import asyncio
+from fastapi import APIRouter, Depends
+from ..database import db,mqtt_client
 from ..lib.wg.wireguard import addWireguard
 from ..lib.docker.dockerGenrator import spawnContainer, IpRange65535
-
 
 router = APIRouter()
 
 
 @router.get("/")
-def root():
-    return {"message": "Welcome To YoungStorage API Service", "status": True}
+async def root():
+    for i in range(100):
+        mqtt_client.publish("/topic/sample", f"container {i}")
+    return {"message": "Welcome to the youngstorage API server", "status": True}
 
 
 @router.get("/deploy")

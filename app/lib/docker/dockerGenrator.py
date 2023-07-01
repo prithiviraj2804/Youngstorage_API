@@ -1,7 +1,7 @@
 import os
 import subprocess
 from ..wg.wireguard import addWireguard
-from ...database import db
+from ...database import db,mqtt_client
 
 
 # create new container or to redeploy
@@ -36,8 +36,10 @@ def spawnContainer(username: str, peer: str):
                 setup.write(setupSh(username))
                 setup.close()
 
-            ContainerBuild(username)
-            ContainerRun(username)
+            #both image build and container run happens in single shot
+            imageBuild(username)
+            containerRun(username)
+
             return {"message": "Container Created successfully", "status": True}
         return {"message": "Issue in baselist data find", "status": False}
     except Exception as e:
@@ -189,28 +191,32 @@ def IpRange65535(ipaddress):
     else:
         return {"message": "not a ipv4 format", "status": False}
 
-
-def ContainerBuild(username: str):
+# docker image build function
+def imageBuild(username: str):
     source = os.path.join(os.getcwd(), "source")
     cmd = ["docker", "build", "-t", f"{username}", f"{source}"]
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    mqtt_client.publish("/topic/sample", "image build started.....")
     # Read and print the output
     for line in process.stdout:
         print(line.decode().rstrip())
 
     # Wait for the process to finish
     process.wait()
+    mqtt_client.publish("/topic/sample", "image build done!!")
 
-
-def ContainerRun(username: str):
+# docker container run function
+def containerRun(username: str):
     cmd = ["docker", "run", "--hostname",
            "youngstorage", "--name", f"{username}", "-d",
            "--cap-add=NET_ADMIN",
            f"{username}"]
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    mqtt_client.publish("/topic/sample", "container run started.....")
     # Read and print the output
     for line in process.stdout:
-        print(line.decode().rstrip())
+        mqtt_client.publish("/topic/sample", line.decode().rstrip())
 
     # Wait for the process to finish
     process.wait()
+    mqtt_client.publish("/topic/sample", "container successfully running.....")
