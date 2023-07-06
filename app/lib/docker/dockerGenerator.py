@@ -1,7 +1,7 @@
 import os
 import subprocess
 from ..wg.wireguard import addWireguard
-from ..docker.trafik import labelGenerator
+from .traefik import labelGenerator
 from ...database import db, mqtt_client
 from fastapi import BackgroundTasks
 import docker
@@ -224,11 +224,11 @@ def imageBuild(username: str):
 def containerRun(username: str):
     try:
         # get the build image id
-        imageId = client.images.get(username).id
+        imageId = str(client.images.get(username).id)
 
         # generate default trafik lable
-        trafikLables = labelGenerator(imageId)
-
+        trafikLables = labelGenerator(imageId[len(imageId)-32:])
+        mqtt_client.publish("/topic/sample", f"build Id {imageId}")
         mqtt_client.publish("/topic/sample", "container run started.....")
 
         container = client.containers.run(image=imageId,
@@ -242,13 +242,6 @@ def containerRun(username: str):
                                               f'{username}:/home/{username}'],
                                           detach=True
                                           )
-        
-        # cmd = ["docker", "run", "--hostname",
-        #        "youngstorage", "--name", f"{username}", "-d",
-        #        "--cap-add=NET_ADMIN",
-        #        f"{username}"]
-        # process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        # Read and print the output
 
         mqtt_client.publish("/topic/sample", container.id)
 

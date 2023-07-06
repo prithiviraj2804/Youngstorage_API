@@ -25,9 +25,13 @@ pip install python-dotenv
 > create .env in root of the project
 
 ```
-WIREGUARD_PUBLIC_KEY="public key"
-WIREGUARD_SERVER="VPN Server IP"
-AllowedIPs="Allowed IPs"
+WIREGUARD_PUBLIC_KEY="wireguard server public key"
+WIREGUARD_SERVER="wireguard server with port"
+AllowedIPs="wireguard allowed ips range"
+MQTT_SERVER="mqtt server ip"
+MONGODB_URL="mongodb url"
+MONGODB_NAME="db name"
+DOMAIN_NAME="server domain name"
 ```
 
 ## microservices 
