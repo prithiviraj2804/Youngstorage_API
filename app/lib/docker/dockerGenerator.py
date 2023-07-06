@@ -1,11 +1,17 @@
 import os
 import subprocess
 from ..wg.wireguard import addWireguard
-from ...database import db,mqtt_client
+from ..docker.trafik import labelGenerator
+from ...database import db, mqtt_client
+from fastapi import BackgroundTasks
+import docker
 
+client = docker.from_env()
 
 # create new container or to redeploy
-def spawnContainer(username: str, peer: str):
+
+
+def spawnContainer(username: str, peer: str, background_task: BackgroundTasks):
     try:
         baselist = list(db.baselist.find())
         if len(baselist) == 1:
@@ -36,11 +42,11 @@ def spawnContainer(username: str, peer: str):
                 setup.write(setupSh(username))
                 setup.close()
 
-            #both image build and container run happens in single shot
-            imageBuild(username)
-            containerRun(username)
+            # both image build and container run happens in single shot
+            # this will happens in the background task
+            background_task.add_task(imageBuild, username)
 
-            return {"message": "Container Created successfully", "status": True}
+            return {"message": "Container process in background", "status": True}
         return {"message": "Issue in baselist data find", "status": False}
     except Exception as e:
         return {"message": str(e), "status": False}
@@ -192,31 +198,62 @@ def IpRange65535(ipaddress):
         return {"message": "not a ipv4 format", "status": False}
 
 # docker image build function
-def imageBuild(username: str):
-    source = os.path.join(os.getcwd(), "source")
-    cmd = ["docker", "build", "-t", f"{username}", f"{source}"]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    mqtt_client.publish("/topic/sample", "image build started.....")
-    # Read and print the output
-    for line in process.stdout:
-        print(line.decode().rstrip())
 
-    # Wait for the process to finish
-    process.wait()
-    mqtt_client.publish("/topic/sample", "image build done!!")
+
+def imageBuild(username: str):
+    try:
+        source = os.path.join(os.getcwd(), "source")
+        cmd = ["docker", "build", "-t", f"{username}", f"{source}"]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        mqtt_client.publish("/topic/sample", "image build started.....")
+        # Read and print the output
+        for line in process.stdout:
+            print(line.decode().rstrip())
+
+        # Wait for the process to finish
+        process.wait()
+        mqtt_client.publish("/topic/sample", "image build done!!")
+        # docker run happens
+        containerRun(username)
+    except Exception as e:
+        mqtt_client.publish("/topic/sample", str(e))
 
 # docker container run function
-def containerRun(username: str):
-    cmd = ["docker", "run", "--hostname",
-           "youngstorage", "--name", f"{username}", "-d",
-           "--cap-add=NET_ADMIN",
-           f"{username}"]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    mqtt_client.publish("/topic/sample", "container run started.....")
-    # Read and print the output
-    for line in process.stdout:
-        mqtt_client.publish("/topic/sample", line.decode().rstrip())
 
-    # Wait for the process to finish
-    process.wait()
-    mqtt_client.publish("/topic/sample", "container successfully running.....")
+
+def containerRun(username: str):
+    try:
+        # get the build image id
+        imageId = client.images.get(username).id
+
+        # generate default trafik lable
+        trafikLables = labelGenerator(imageId)
+
+        mqtt_client.publish("/topic/sample", "container run started.....")
+
+        container = client.containers.run(image=imageId,
+                                          hostname="youngstorage",
+                                          labels=trafikLables,
+                                          name=username,
+                                          cap_add=["NET_ADMIN"],
+                                          network="containers",
+                                          restart_policy={"Name": "always"},
+                                          volumes=[
+                                              f'{username}:/home/{username}'],
+                                          detach=True
+                                          )
+        
+        # cmd = ["docker", "run", "--hostname",
+        #        "youngstorage", "--name", f"{username}", "-d",
+        #        "--cap-add=NET_ADMIN",
+        #        f"{username}"]
+        # process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        # Read and print the output
+
+        mqtt_client.publish("/topic/sample", container.id)
+
+        # Wait for the process to finish
+        mqtt_client.publish(
+            "/topic/sample", "container successfully running.....")
+    except Exception as e:
+        mqtt_client.publish("/topic/sample", str(e))

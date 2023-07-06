@@ -15,6 +15,7 @@ class Signup(BaseModel):
     email: EmailStr
     password: str
     phone: str
+    
 
     @validator("email")
     def email_validation(cls, email):

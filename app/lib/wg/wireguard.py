@@ -56,8 +56,6 @@ PersistentKeepalive = 5
 '''
 
 # wg peer template to add in vpn server
-
-
 def addWgPeer(IPaddress, publickey):
     return f'''[Peer]
 PublicKey = {publickey}

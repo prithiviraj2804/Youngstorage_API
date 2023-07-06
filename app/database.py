@@ -1,11 +1,10 @@
 from pymongo import MongoClient
 import paho.mqtt.client as mqtt
-from app.config import config
 import os
 
-client = MongoClient(config.mongo)
+client = MongoClient(str(os.getenv("MONGODB_URL")))
 
-db = client["youngstorage"]
+db = client[str(os.getenv("MONGODB_NAME"))]
 
 mqtt_client = mqtt.Client()
 

@@ -84,7 +84,7 @@ gmqtt==0.6.12
 google-auth==2.17.3
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
-googlesearch-python==1.1.0
+googlesearch-python
 greenlet==2.0.2
 grpcio==1.51.3
 gunicorn==20.1.0
@@ -98,7 +98,7 @@ hyperlink==21.0.0
 idna==2.8
 importlib-metadata==4.6.4
 incremental==22.10.0
-ipykernel==6.21.3
+ipykernel
 ipython==8.11.0
 ipython-genutils==0.2.0
 ipywidgets==8.0.4

@@ -2,7 +2,8 @@ import asyncio
 from fastapi import APIRouter, Depends
 from ..database import db,mqtt_client
 from ..lib.wg.wireguard import addWireguard
-from ..lib.docker.dockerGenrator import spawnContainer, IpRange65535
+from ..lib.docker.dockerGenerator import spawnContainer
+from fastapi import BackgroundTasks
 
 router = APIRouter()
 
@@ -15,15 +16,10 @@ async def root():
 
 
 @router.get("/deploy")
-def Deploy():
-    return spawnContainer("bhadri2002", "1")
+def Deploy(background_task:BackgroundTasks):
+    return spawnContainer("bhadri2002", "1",background_task)
 
 
 @router.get("/addpeer")
 def addPeer():
     return addWireguard("bhadri2002", "1", "172.20.0.2")
-
-
-@router.get("/iplist/{ip}")
-def iplist(ip):
-    return IpRange65535(ip)
