@@ -1,21 +1,17 @@
-from fastapi import APIRouter
-from fastapi_jwt_auth import AuthJWT
-from fastapi_jwt_auth.exceptions import AuthJWTException
 from pydantic import BaseModel, EmailStr, Field, validator
-from ..database import db
 import re
 
-router = APIRouter()
 
 password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,64}$"
 phone_regex = r"^[0-9]{10}$"
 
 
 class Signup(BaseModel):
-    email: EmailStr
-    password: str
-    phone: str
-    
+
+    email : EmailStr
+    password : str
+    phone : str 
+    user_verified : bool = False
 
     @validator("email")
     def email_validation(cls, email):
@@ -38,17 +34,4 @@ class Signup(BaseModel):
         if not re.match(phone_regex, phone):
             raise ValueError("Please enter a valid phone number")
         return phone
-
-
-@router.post("/signup")
-def signup(data: Signup):
-    try:
-        if db.user.find_one({"email": data.email}):
-            return {"message": "email already exists", "status": False}
-        elif db.user.find_one({"phone": data.phone}):
-            return {"message": "phone number already exists", "status": False}
-        else:
-            db.user.insert_one(data.dict())
-            return {"message": "User Signed Up Successfully", "status": True}
-    except Exception as e:
-        return {"message": str(e), "status": False}
+    
