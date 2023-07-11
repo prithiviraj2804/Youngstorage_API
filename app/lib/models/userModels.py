@@ -1,25 +1,27 @@
 from pydantic import BaseModel, EmailStr, Field, validator
 import re
-
+from passlib.context import CryptContext
 
 password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,64}$"
 phone_regex = r"^[0-9]{10}$"
 
+# Create an instance of the password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 class Signup(BaseModel):
-
-    email : EmailStr
-    password : str
-    phone : str 
-    user_verified : bool = False
+    email: EmailStr
+    password: str
+    phone: str
+    user_verified: bool = False
 
     @validator("email")
     def email_validation(cls, email):
         verify = email.split("@")
-        allowed = ["gmail.com", 'hotmail.com', "outlook.com",
+        allowed = ["gmail.com", "hotmail.com", "outlook.com",
                    "icloud.com", "protonmail.com", "live.com"]
         if verify[1] not in allowed:
-            raise ValueError("Please Enter Valid Email Domain")
+            raise ValueError("Please enter a valid email domain")
         return email
 
     @validator("password")
@@ -34,4 +36,19 @@ class Signup(BaseModel):
         if not re.match(phone_regex, phone):
             raise ValueError("Please enter a valid phone number")
         return phone
-    
+
+    def create_user(self):
+        # Hash the password
+        hashed_password = pwd_context.hash(self.password)
+
+        # Save the user to the database (example code)
+        user_data = {
+            "email": self.email,
+            "password": hashed_password,
+            "phone": self.phone,
+            "user_verified": self.user_verified
+        }
+        # Save user_data to the database using your preferred method
+
+        # Return the created user (example code)
+        return user_data

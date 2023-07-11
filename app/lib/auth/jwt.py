@@ -12,28 +12,35 @@ import os
 # secrets.token_hex(32)
 
 
-def signJWT(_id: str) -> str:
+def signJWT(_id: str, exp: int = int(os.getenv("JWT_EXPIRATION_TIME_IN_MIN"))) -> str:
     payload = {
         "_id": _id,
-        "exp": datetime.utcnow() + timedelta(minutes=int(os.getenv("JWT_EXPIRATION_TIME_IN_MIN")))
+        "exp": datetime.utcnow() + timedelta(minutes=exp)
     }
     token = jwt.encode(payload, os.getenv("JWT_SECRET_KEY"),
                        algorithm=os.getenv("JWT_ALGORITHM"))
     return token
 
-def decodeJWT(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())) ->str:
+
+def singupJWT(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())) -> str:
     try:
         token = credentials.credentials
-        payload = jwt.decode(token, os.getenv("JWT_SECRET_KEY"), algorithms=[os.getenv("JWT_ALGORITHM")])
+        payload = jwt.decode(
+            token,
+            os.getenv("JWT_SECRET_KEY"),
+            algorithms=[os.getenv("JWT_ALGORITHM")]
+        )
         _id = payload.get("_id")
-        
-        if not _id:
+        exp = payload.get("exp")
+
+        if not _id or not exp:
             raise HTTPException(status_code=401, detail="Invalid token")
         else:
-            if db.user.find_one({"_id":ObjectId(_id)}):
+            if db.user.find_one({"_id": ObjectId(_id)}):
                 return _id
             else:
-                raise HTTPException(status_code=401, detail="Invalid token")        
-    except jwt.exceptions.JWTError:
+                raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.exceptions.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.exceptions.DecodeError:
         raise HTTPException(status_code=401, detail="Invalid token")
-
