@@ -16,7 +16,7 @@ async def signup(data: Signup):
             return {"message": "phone number already exists", "status": False}
         else:
             _id = db.user.insert_one(data.create_user()).inserted_id
-            await send_email_async("User verification", data.email, "1")
+            await send_email_async("User verification", data.email, signJWT(str(_id), 5))
             return {"message": "User Signed Up Successfully. Now check the email", "status": True}
     except Exception as e:
         return {"message": str(e), "status": False}
@@ -30,3 +30,6 @@ def user_verify(_id=Depends(singupJWT)):
         return {"message": "User Not Verified", "status": False}
 
 
+@router.get("/user")
+def user(data=Depends(singupJWT)):
+    return {"message": data, "status": False}

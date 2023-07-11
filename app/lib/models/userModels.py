@@ -14,6 +14,7 @@ class Signup(BaseModel):
     password: str
     phone: str
     user_verified: bool = False
+    role: str = "user"
 
     @validator("email")
     def email_validation(cls, email):
@@ -46,7 +47,8 @@ class Signup(BaseModel):
             "email": self.email,
             "password": hashed_password,
             "phone": self.phone,
-            "user_verified": self.user_verified
+            "user_verified": self.user_verified,
+            "role": self.role
         }
         # Save user_data to the database using your preferred method
 
