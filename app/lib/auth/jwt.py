@@ -31,36 +31,44 @@ def signJWT(_id: str, exp: int = 60*24, user_verified: bool = False, role: UserR
     return token
 
 
-def singupJWT(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())) -> str:
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(
-            token,
-            os.getenv("JWT_SECRET_KEY"),
-            algorithms=[os.getenv("JWT_ALGORITHM")]
-        )
-        _id = payload.get("_id")
-        role = payload.get("role")
-        user_verified = payload.get("user_verified")
-        exp = payload.get("exp")
+class Authenticator:
+    def __init__(self, user_verified: bool, role: UserRole):
+        self.user_verified = user_verified
+        self.role = role
 
-        if not _id or not exp or not role:
+    def signupJWT(self, credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())) -> str:
+        try:
+            token = credentials.credentials
+            payload = jwt.decode(
+                token,
+                os.getenv("JWT_SECRET_KEY"),
+                algorithms=[os.getenv("JWT_ALGORITHM")]
+            )
+            _id = payload.get("_id")
+            role = payload.get("role")
+            user_verified = payload.get("user_verified")
+            exp = payload.get("exp")
+
+            if not _id or not exp or not role or not str(user_verified):
+                raise HTTPException(status_code=401, detail="Invalid token")
+
+            if self.user_verified:
+                if self.user_verified == user_verified and self.role == role:
+                    if db.user.find_one({"_id": ObjectId(_id), "role": role}):
+                        return _id
+                    else:
+                        raise HTTPException(
+                            status_code=401, detail="Invalid token")
+                else:
+                    raise HTTPException(
+                        status_code=401, detail="Invalid token")
+            else:
+                if db.user.find_one({"_id": ObjectId(_id), "role": role,"user_verified":user_verified}):
+                    return _id
+                else:
+                    raise HTTPException(
+                        status_code=401, detail="Invalid token")
+        except jwt.exceptions.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired")
+        except jwt.exceptions.DecodeError:
             raise HTTPException(status_code=401, detail="Invalid token")
-
-        if user_verified:
-            data = db.user.find_one({"_id": ObjectId(_id), "user_verified": True, "role": role})
-            if data:
-                return data
-            else:
-                raise HTTPException(
-                    status_code=401, detail="Invalid token")
-        else:
-            if db.user.find_one({"_id": ObjectId(_id), "role": role}):
-                return _id
-            else:
-                raise HTTPException(
-                    status_code=401, detail="Invalid token")
-    except jwt.exceptions.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.exceptions.DecodeError:
-        raise HTTPException(status_code=401, detail="Invalid token")
