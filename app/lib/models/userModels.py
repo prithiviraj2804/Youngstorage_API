@@ -15,6 +15,7 @@ class Signup(BaseModel):
     phone: str
     user_verified: bool = False
     role: str = "user"
+    username: str | None = None
 
     @validator("email")
     def email_validation(cls, email):
@@ -44,6 +45,7 @@ class Signup(BaseModel):
 
         # Save the user to the database (example code)
         user_data = {
+            "username":self.email.split("@")[0],
             "email": self.email,
             "password": hashed_password,
             "phone": self.phone,
@@ -55,10 +57,10 @@ class Signup(BaseModel):
         # Return the created user (example code)
         return user_data
 
+
 class Signin(BaseModel):
     email: EmailStr
     password: str
 
-    def verify_user(self,hash_password):
+    def verify_user(self, hash_password):
         return pwd_context.verify(self.password, hash_password)
-

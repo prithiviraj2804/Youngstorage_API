@@ -54,8 +54,11 @@ class Authenticator:
 
             if self.user_verified:
                 if self.user_verified == user_verified and self.role == role:
-                    if db.user.find_one({"_id": ObjectId(_id), "role": role}):
-                        return _id
+                    data = db.user.find_one({"_id": ObjectId(_id), "role": role, "user_verified": user_verified})
+                    if data:
+                        data["_id"] = str(data["_id"])
+                        data.pop("password")
+                        return data
                     else:
                         raise HTTPException(
                             status_code=401, detail="Invalid token")
@@ -63,7 +66,7 @@ class Authenticator:
                     raise HTTPException(
                         status_code=401, detail="Invalid token")
             else:
-                if db.user.find_one({"_id": ObjectId(_id), "role": role,"user_verified":user_verified}):
+                if db.user.find_one({"_id": ObjectId(_id), "role": role, "user_verified": user_verified}):
                     return _id
                 else:
                     raise HTTPException(
