@@ -1,9 +1,10 @@
 import os
 import subprocess
+from ...database import db
 
 
 # creating new wg peer file for the user
-def addWireguard(name: str, peer: str, IPaddress: str):
+def addWireguard(_id: str, name: str, peer: str, IPaddress: str):
     try:
         # source dir for the client peer files save
         source = os.path.join(os.getcwd(), "source",
@@ -39,7 +40,7 @@ def addWireguard(name: str, peer: str, IPaddress: str):
 
         return {"message": addWgPeer(IPaddress, publickey), "status": True}
     except Exception as e:
-        return {"message": str(e), "status": False}
+        raise (str(e))
 
 
 # wg conf template
@@ -56,6 +57,8 @@ PersistentKeepalive = 5
 '''
 
 # wg peer template to add in vpn server
+
+
 def addWgPeer(IPaddress, publickey):
     return f'''[Peer]
 PublicKey = {publickey}

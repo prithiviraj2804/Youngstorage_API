@@ -11,7 +11,7 @@ client = docker.from_env()
 # create new container or to redeploy
 
 
-def spawnContainer(username: str, peer: str, background_task: BackgroundTasks):
+def spawnContainer(_id: str, username: str, peer: str, background_task: BackgroundTasks):
     try:
         baselist = list(db.baselist.find())
         if len(baselist) == 1:
@@ -19,14 +19,13 @@ def spawnContainer(username: str, peer: str, background_task: BackgroundTasks):
             # this function will happens very first time
             # create two peer
             # 1-container
-            # 2-client
-            for i in range(int(peer), 3):
-                ipdata = IpRange65535(ip)
-                if ipdata["status"]:
-                    ip = ipdata["message"]
-                    addWireguard(username, str(i), ip)
-                else:
-                    return ipdata
+            ipdata = IpRange65535(ip)
+            if ipdata["status"]:
+                ip = ipdata["message"]
+                # very first time will create the network
+                # peer-1 for the container
+                addWireguard(_id, username, peer, ip)
+
             db.baselist.update_one({"_id": baselist[0]["_id"]}, {
                                    "$set": {"ip": ip, "ipissued": baselist[0]["ipissued"]+2, "no_client": baselist[0]["no_client"]+1}})
             source = os.path.join(os.getcwd(), "source")
@@ -181,7 +180,7 @@ def IpRange65535(ipaddress):
     ip = list(map(int, str(ipaddress).split(".")))
     for i in ip:
         if i > 255:
-            return {"message": "not a ipv4 format", "status": False}
+            raise ("not a ipv4 format")
 
     if len(ip) == 4:
         if ip[3] < 255:
@@ -191,11 +190,11 @@ def IpRange65535(ipaddress):
                 ip[3] = 0
                 ip[2] += 1
             else:
-                return {"message": "End of ipv4 list", "status": False}
+                raise ("End of ipv4 list")
         ip = list(map(str, ip))
         return {"message": ".".join(ip), "status": True}
     else:
-        return {"message": "not a ipv4 format", "status": False}
+        raise ("not a ipv4 format")
 
 # docker image build function
 
