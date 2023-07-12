@@ -24,7 +24,7 @@ def getContainerData(data=Depends(Authenticator(True, UserRole.user).signupJWT))
 def createContainer(background_task: BackgroundTasks, data=Depends(Authenticator(True, UserRole.user).signupJWT)):
     try:
         # print(WireguardNetwork(userId=data["_id"],devicename="phone",ipaddress="172.0.0.2",publickey="123123").addPeer())
-        container = db.labs.find_one({"_id": ObjectId(data["_id"])})
+        container = db.labs.find_one({"userId": data["_id"]})
         # if container already exist redeploy happens
         if container:
             return []

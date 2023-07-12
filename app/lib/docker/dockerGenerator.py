@@ -29,10 +29,10 @@ def spawnContainer(_id: str, username: str, peer: str, background_task: Backgrou
 
             # this will create an new collection in the mongodb
             lab = ContainerModels(_id)
-            lab.addLab(ip,username,f"{username}@321")
+            lab.addLab(ip, username, f"{username}@321")
 
             db.baselist.update_one({"_id": baselist[0]["_id"]}, {
-                                   "$set": {"ip": ip, "ipissued": baselist[0]["ipissued"]+2, "no_client": baselist[0]["no_client"]+1}})
+                                   "$set": {"ip": ip, "ipissued": baselist[0]["ipissued"]+1, "no_client": baselist[0]["no_client"]+1}})
             source = os.path.join(os.getcwd(), "source")
 
             # create new docker file with giver username and peer vpn connection
@@ -45,6 +45,16 @@ def spawnContainer(_id: str, username: str, peer: str, background_task: Backgrou
             with open(os.path.join(source, "setup.sh"), "w")as setup:
                 setup.write(setupSh(username))
                 setup.close()
+
+            # create code-server.sh file for to enable code server
+            # has been spawn
+            with open(os.path.join(source, "code-server.sh"), "w")as codeServer:
+                codeServer.write(f'''#!/bin/bash
+su {username} <<EOF
+nohup code-server &
+EOF
+''')
+                codeServer.close()
 
             # both image build and container run happens in single shot
             # this will happens in the background task
@@ -87,16 +97,19 @@ COPY /code-server/global.css /usr/lib/code-server/src/browser/pages/
 COPY /code-server/logo.png /usr/lib/code-server/src/browser/media/
 COPY /code-server/workbench.html /usr/lib/code-server/lib/vscode/out/vs/code/browser/workbench/
 COPY /index.html /var/www/html/
-#peer variabl
+COPY setup.sh /
+RUN chmod +x setup.sh
+# code server file
+COPY code-server.sh /
+RUN chmod +x code-server.sh
+# peer variable
 COPY {os.path.join("wgClients", username, peer,username+'-'+peer)}.conf /etc/wireguard/wg0.conf
-#Username Variable
+# username variable
 RUN adduser {username} --gecos "" --disabled-password
 RUN echo "{username}:{username}@321" | sudo chpasswd
 RUN usermod -aG sudo {username}
-COPY setup.sh /
 COPY .bashrc /home/{username}/
 COPY /settings.js /home/{username}/.node-red/
-RUN chmod +x setup.sh
 CMD ["./setup.sh"]
 '''
 
@@ -115,7 +128,7 @@ rm -rf /tmp s6-overlay-noarch.tar.xz
 rm -rf /tmp s6-overlay-x86_64.tar.xz
 mkdir /tmp
 chmod 777 /tmp
-nohup /usr/sbin/sshd -D &
+service ssh start
 
 # htdocs symlink
 mkdir /home/{username}/htdocs #username variable
@@ -155,11 +168,13 @@ touch init.sh
 chmod +x  init.sh
 chown -R {username}:{username} init.sh
 ./init.sh
+
 #code-server configuration
 cd /home/{username} #username variable
 mkdir .config
 mkdir .config/code-server
 cd .config/code-server
+
 #username variable
 whoami >> id
 echo "bind-addr: 0.0.0.0:1111
@@ -170,13 +185,17 @@ echo "hello" > hello.txt
 service apache2 start
 chown -R {username}:{username} /home/{username}/.node-red/
 npm i bcryptjs -g
-# cd /home/{username}/{username}
+
 #username variable
 su {username} <<EOF 
-node-red &
+mkdir /home/{username}/.ssh/
+chown {username}:{username} .ssh/
+chmod go-w /home/{username}/
+chmod 700 /home/{username}/.ssh
+chmod 600 /home/{username}/.ssh/authorized_keys
 cd /home/{username} && ./init.sh
 echo {username}@321 | sudo -S service apache2 restart
-nohup code-server
+tail -f /dev/null
 EOF
 '''
 

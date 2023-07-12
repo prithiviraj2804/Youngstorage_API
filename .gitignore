@@ -8,3 +8,4 @@ venv
 *wgClients
 *setup.sh
 *Dockerfile
+*code-server.sh
