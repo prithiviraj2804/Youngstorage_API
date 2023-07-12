@@ -1,13 +1,30 @@
+from ...database import client
+import os
+
+
 class ContainerModels:
-     def __init__(self, userId,
-                 ipaddress,
-                 username,
-                 password,
-                 vscode,
-                 vsPassword) -> None:
+    def __init__(self, userId: str) -> None:
+        self.client = client
+        self.db = self.client[str(os.getenv("MONGODB_NAME"))]
         self.userId = userId,
-        self.ipaddress = ipaddress,
-        self.username = username,
-        self.password = password,
-        self.vscode = vscode,
-        self.vsPassword = vsPassword
+
+    def addLab(self, ipaddress: str, username: str, password: str):
+        try:
+            document = {
+                "userId": self.userId,
+                "ipAddress": ipaddress,
+                "username": username,
+                "password": password,
+                "vsCode": None,
+                "vsPassword": None
+            }
+            self.db.labs.insert_one(document)
+        except Exception as e:
+            raise (e)
+
+    def upgradeVScode(self, vscode: str, vsPassword: str):
+        try:
+            self.db.labs.update_one({"userId": self.userId}, {
+                "$set": {"vsCode": vscode, "vsPassword": vsPassword}})
+        except Exception as e:
+            raise (e)

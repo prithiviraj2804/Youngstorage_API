@@ -54,7 +54,8 @@ class Authenticator:
 
             if self.user_verified:
                 if self.user_verified == user_verified and self.role == role:
-                    data = db.user.find_one({"_id": ObjectId(_id), "role": role, "user_verified": user_verified})
+                    data = db.user.find_one(
+                        {"_id": ObjectId(_id), "role": role, "user_verified": user_verified})
                     if data:
                         data["_id"] = str(data["_id"])
                         data.pop("password")

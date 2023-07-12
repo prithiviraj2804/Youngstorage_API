@@ -4,6 +4,7 @@ from ..wg.wireguard import addWireguard
 from .traefik import labelGenerator
 from ...database import db, mqtt_client
 from fastapi import BackgroundTasks
+from ...lib.models.labsModels import ContainerModels
 import docker
 
 client = docker.from_env()
@@ -25,6 +26,10 @@ def spawnContainer(_id: str, username: str, peer: str, background_task: Backgrou
                 # very first time will create the network
                 # peer-1 for the container
                 addWireguard(_id, username, peer, ip)
+
+            # this will create an new collection in the mongodb
+            lab = ContainerModels(_id)
+            lab.addLab(ip,username,f"{username}@321")
 
             db.baselist.update_one({"_id": baselist[0]["_id"]}, {
                                    "$set": {"ip": ip, "ipissued": baselist[0]["ipissued"]+2, "no_client": baselist[0]["no_client"]+1}})
@@ -48,7 +53,7 @@ def spawnContainer(_id: str, username: str, peer: str, background_task: Backgrou
             return {"message": "Container process in background", "status": True}
         return {"message": "Issue in baselist data find", "status": False}
     except Exception as e:
-        raise(e)
+        raise (e)
 
 
 # docker generator template
@@ -196,7 +201,7 @@ def IpRange65535(ipaddress):
         else:
             raise ValueError("not a ipv4 format")
     except ValueError as e:
-        raise(e)
+        raise (e)
 
 # docker image build function
 
