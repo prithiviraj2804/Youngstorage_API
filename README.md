@@ -25,13 +25,31 @@ pip install python-dotenv
 > create .env in root of the project
 
 ```
-WIREGUARD_PUBLIC_KEY="wireguard server public key"
-WIREGUARD_SERVER="wireguard server with port"
-AllowedIPs="wireguard allowed ips range"
-MQTT_SERVER="mqtt server ip"
-MONGODB_URL="mongodb url"
-MONGODB_NAME="db name"
-DOMAIN_NAME="server domain name"
+# wireguard congid
+WIREGUARD_PUBLIC_KEY = <private key>
+WIREGUARD_SERVER = <server with port>
+AllowedIPs = <allowed ips> 
+
+# mqtt server config
+MQTT_SERVER = <server url>
+
+# db config for mongo
+MONGODB_URL = <url>
+MONGODB_NAME = <db name>
+DOMAIN_NAME = <domain name>
+
+# JWTconfig
+JWT_SECRET_KEY = <secret key>
+JWT_ALGORITHM = <algo>
+
+# Email Configuration
+MAIL_SERVER = 'smtp.office365.com'
+MAIL_PORT = 587
+MAIL_USE_TLS = True
+MAIL_USERNAME = <username>
+MAIL_PASSWORD = <password>
+MAIL_DEFAULT_SENDER = <default send mail>
+MAIL_TITLE = <subject>
 ```
 
 ## microservices 
