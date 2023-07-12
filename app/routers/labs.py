@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/deploy")
-def Deploy(data=Depends(Authenticator(True, UserRole.user).signupJWT)):
+def getContainerData(data=Depends(Authenticator(True, UserRole.user).signupJWT)):
     try:
         container = db.container.find_one({"_id": ObjectId(data["_id"])})
         if container:
@@ -19,14 +19,16 @@ def Deploy(data=Depends(Authenticator(True, UserRole.user).signupJWT)):
     except Exception as e:
         return {"message": str(e), "status": False}
 
+
 @router.post("/deploy")
-def Deploy(background_task: BackgroundTasks, data=Depends(Authenticator(True, UserRole.user).signupJWT)):
+def createContainer(background_task: BackgroundTasks, data=Depends(Authenticator(True, UserRole.user).signupJWT)):
     try:
+        # print(WireguardNetwork(userId=data["_id"],devicename="phone",ipaddress="172.0.0.2",publickey="123123").addPeer())
         container = db.container.find_one({"_id": ObjectId(data["_id"])})
         # if container already exist redeploy happens
         if container:
             return []
-        else: # container not already exist new instance will be created
-            return spawnContainer(data["_id"],data["username"], "1", background_task)
+        else:  # container not already exist new instance will be created
+            return spawnContainer(data["_id"], data["username"], "1", background_task)
     except Exception as e:
         return {"message": str(e), "status": False}

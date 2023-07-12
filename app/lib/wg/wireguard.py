@@ -1,7 +1,6 @@
 import os
 import subprocess
-from ...database import db
-
+from ...lib.models.networkModels import WireguardNetwork
 
 # creating new wg peer file for the user
 def addWireguard(_id: str, name: str, peer: str, IPaddress: str):
@@ -33,14 +32,17 @@ def addWireguard(_id: str, name: str, peer: str, IPaddress: str):
         cmd = f"qrencode -t png -o {os.path.join(source,name+'-'+peer+'.png')} -r {os.path.join(source,name+'-'+peer+'.conf')}"
         subprocess.check_output(cmd, shell=True, text=True)
 
+
         # reading publickey
         with open(os.path.join(source, "publickey")) as file:
             publickey = file.read().strip()
             file.close()
 
+        Network = WireguardNetwork(_id,IPaddress,publickey,"Linux lab")
+
         return {"message": addWgPeer(IPaddress, publickey), "status": True}
     except Exception as e:
-        raise (str(e))
+        raise (e)
 
 
 # wg conf template

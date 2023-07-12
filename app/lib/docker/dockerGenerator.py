@@ -48,7 +48,7 @@ def spawnContainer(_id: str, username: str, peer: str, background_task: Backgrou
             return {"message": "Container process in background", "status": True}
         return {"message": "Issue in baselist data find", "status": False}
     except Exception as e:
-        return {"message": str(e), "status": False}
+        raise(e)
 
 
 # docker generator template
@@ -177,24 +177,26 @@ EOF
 
 
 def IpRange65535(ipaddress):
-    ip = list(map(int, str(ipaddress).split(".")))
-    for i in ip:
-        if i > 255:
-            raise ("not a ipv4 format")
-
-    if len(ip) == 4:
-        if ip[3] < 255:
-            ip[3] += 1
-        elif ip[3] == 255:
-            if ip[2] < 255:
-                ip[3] = 0
-                ip[2] += 1
-            else:
-                raise ("End of ipv4 list")
-        ip = list(map(str, ip))
-        return {"message": ".".join(ip), "status": True}
-    else:
-        raise ("not a ipv4 format")
+    try:
+        ip = list(map(int, str(ipaddress).split(".")))
+        for i in ip:
+            if i > 255:
+                raise ValueError("not a ipv4 format")
+        if len(ip) == 4:
+            if ip[3] < 255:
+                ip[3] += 1
+            elif ip[3] == 255:
+                if ip[2] < 255:
+                    ip[3] = 0
+                    ip[2] += 1
+                else:
+                    raise ValueError("End of ipv4 list")
+            ip = list(map(str, ip))
+            return {"message": ".".join(ip), "status": True}
+        else:
+            raise ValueError("not a ipv4 format")
+    except ValueError as e:
+        raise(e)
 
 # docker image build function
 
