@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from ..database import db
-from ..lib.models.userModels import Signup
+from ..lib.models.userModels import Signup, Signin
 from ..lib.auth.jwt import signJWT, Authenticator, UserRole
 from ..lib.auth.email_sender import send_email_async
 from bson import ObjectId
@@ -23,14 +23,31 @@ async def signup(data: Signup):
 
 
 @router.get("/userverify")
-def user_verify(_id=Depends(Authenticator(False,UserRole.user).signupJWT)):
-    print("say somthing:",_id)
+def user_verify(_id=Depends(Authenticator(False, UserRole.user).signupJWT)):
+    print("say somthing:", _id)
     if db.user.update_one({"_id": ObjectId(_id)}, {"$set": {"user_verified": True}}):
         return {"message": "User Verified Successfully", "status": True}
     else:
         return {"message": "User Not Verified", "status": False}
 
 
+@router.post("/signin")
+async def signup(response: Response, data: Signin):
+    try:
+        user = db.user.find_one({"email": data.email})
+        data = data.verify_user(user["password"])
+        if "_id" in user and data:
+            if user["user_verified"] == True:
+                response.headers["Authorization"] = f"Bearer {signJWT(str(user['_id']),user_verified=True)}"
+                return {"message": "User Signin Successfull", "status": True}
+            else:
+                return {"message": "User Not Verified", "status": False}
+        else:
+            return {"message": "Invalid Credentials", "status": False}
+    except Exception as e:
+        return {"message": str(e), "status": False}
+
+
 @router.get("/user")
-def user(data=Depends(Authenticator(True,UserRole.user).signupJWT)):
+def user(data=Depends(Authenticator(True, UserRole.user).signupJWT)):
     return {"message": data, "status": True}

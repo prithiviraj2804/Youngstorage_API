@@ -54,3 +54,11 @@ class Signup(BaseModel):
 
         # Return the created user (example code)
         return user_data
+
+class Signin(BaseModel):
+    email: EmailStr
+    password: str
+
+    def verify_user(self,hash_password):
+        return pwd_context.verify(self.password, hash_password)
+
