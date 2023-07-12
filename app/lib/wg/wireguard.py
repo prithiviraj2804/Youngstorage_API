@@ -41,7 +41,7 @@ def addWireguard(_id: str, name: str, peer: str, IPaddress: str, deviceName: str
 
         # this class function will add the wireguard network function
         Network = WireguardNetwork(_id, IPaddress, publickey, deviceName)
-        Network.addPeer()
+        Network.addLabPeer()
 
         return {"message": addWgPeer(IPaddress, publickey), "status": True}
     except Exception as e:

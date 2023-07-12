@@ -29,6 +29,6 @@ def createContainer(background_task: BackgroundTasks, data=Depends(Authenticator
         if container:
             return []
         else:  # container not already exist new instance will be created
-            return spawnContainer(data["_id"], data["username"], "1", background_task)
+            return spawnContainer(data["_id"], data["username"], "lab", background_task)
     except Exception as e:
         return {"message": str(e), "status": False}

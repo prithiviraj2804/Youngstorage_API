@@ -10,19 +10,23 @@ class NetworkModel:
     def getNetwork(self):
         user = self.db.network.find_one({"userId": self.userId})
         if user:
+            self.labPeer = user["labPeer"]
             self.peerList = user["peerList"]
             self.domainList = user["domainList"]
             self.currentPeer = user["currentPeer"]
             self.maxPeer = user["maxPeer"]
             self.currentDomain = user["currentDomain"]
             self.maxDomain = user["maxDomain"]
+            self.haveNetwork = True
         else:
+            self.labPeer = {}
             self.peerList = []
             self.domainList = []
             self.currentPeer = 0
-            self.maxPeer = 4
+            self.maxPeer = 3
             self.currentDomain = 0
             self.maxDomain = 5
+            self.haveNetwork = False
 
 
 class WireguardNetwork(NetworkModel):
@@ -31,6 +35,27 @@ class WireguardNetwork(NetworkModel):
         self.ipAddress = ipaddress
         self.publicKey = publickey
         self.deviceName = devicename
+
+    def addLabPeer(self):
+        self.labPeer = {
+            "ipAddress": self.ipAddress,
+            "publicKey": self.publicKey,
+            "deviceName": self.deviceName
+        }
+        document = {
+                'userId': self.userId,
+                'labPeer':self.labPeer,
+                'peerList': self.peerList,
+                'domainList': self.domainList,
+                'currentPeer': self.currentPeer,
+                'maxPeer': self.maxPeer,
+                'currentDomain': self.currentDomain,
+                'maxDomain': self.maxDomain
+            }
+        if self.haveNetwork:
+            self.db.network.update_one({"userId": self.userId}, {"$set": {"labPeer": self.labPeer}})
+        else:
+            self.db.network.insert_one(document)
 
     def addPeer(self):
         # Example: Save network model data to the database
@@ -44,6 +69,7 @@ class WireguardNetwork(NetworkModel):
 
             document = {
                 'userId': self.userId,
+                'labPeer':self.labPeer,
                 'peerList': self.peerList,
                 'domainList': self.domainList,
                 'currentPeer': self.currentPeer,
@@ -51,7 +77,7 @@ class WireguardNetwork(NetworkModel):
                 'currentDomain': self.currentDomain,
                 'maxDomain': self.maxDomain
             }
-            if self.currentPeer > 1:
+            if self.haveNetwork:
                 self.db.network.update_one({"userId": self.userId}, {
                                            "$set": {"peerList": self.peerList, "currentPeer": self.currentPeer}})
             else:
@@ -75,6 +101,7 @@ class DomainNetwork(NetworkModel):
 
             document = {
                 'userId': self.userId,
+                'labPeer':self.labPeer,
                 'peerList': self.peerList,
                 'domainList': self.domainList,
                 'currentPeer': self.currentPeer,
@@ -82,10 +109,10 @@ class DomainNetwork(NetworkModel):
                 'currentDomain': self.currentDomain,
                 'maxDomain': self.maxDomain
             }
-            if self.currentDomain > 1:
+            if self.haveNetwork:
                 self.db.network.update_one({"userId": self.userId}, {
                                            "$set": {"domainList": self.domainList, "currentDomain": self.currentDomain}})
             else:
                 self.db.network.insert_one(document)
         else:
-            raise ValueError("max peer reached")
+            raise ValueError("max domain reached")

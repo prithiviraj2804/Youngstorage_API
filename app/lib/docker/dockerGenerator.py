@@ -6,6 +6,7 @@ from ...database import db, mqtt_client
 from fastapi import BackgroundTasks
 from ...lib.models.labsModels import ContainerModels
 import docker
+from docker.errors import NotFound
 
 client = docker.from_env()
 
@@ -248,12 +249,22 @@ def imageBuild(username: str):
 
 def containerRun(username: str):
     try:
+
+        # container already exist flesh process
+        exContainer = client.containers.get(username)
+        if exContainer.id:
+            exContainer.remove(force=True)
+            mqtt_client.publish("/topic/sample", f"Removed existing container......")
+            raise NotFound(f"{username} container removed")
+
+    # container not found build new one
+    except NotFound:
         # get the build image id
         imageId = str(client.images.get(username).id)
 
         # generate default trafik lable
         trafikLables = labelGenerator(imageId[len(imageId)-32:])
-        mqtt_client.publish("/topic/sample", f"build Id {imageId}")
+        mqtt_client.publish("/topic/sample", f"build Id {imageId}........")
         mqtt_client.publish("/topic/sample", "container run started.....")
 
         container = client.containers.run(image=imageId,
@@ -273,5 +284,7 @@ def containerRun(username: str):
         # Wait for the process to finish
         mqtt_client.publish(
             "/topic/sample", "container successfully running.....")
+    
+
     except Exception as e:
         mqtt_client.publish("/topic/sample", str(e))
