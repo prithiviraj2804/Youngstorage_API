@@ -1,12 +1,9 @@
-from ...database import client
-from bson import ObjectId
-import os
+from ...database import db
 
 
 class NetworkModel:
     def __init__(self, userId: str) -> None:
-        self.client = client
-        self.db = self.client[str(os.getenv("MONGODB_NAME"))]
+        self.db = db
         self.userId = userId
         self.getNetwork()
 

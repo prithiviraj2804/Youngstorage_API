@@ -1,12 +1,10 @@
-from ...database import client
-import os
+from ...database import db
 
 
 class ContainerModels:
     def __init__(self, userId: str) -> None:
-        self.client = client
-        self.db = self.client[str(os.getenv("MONGODB_NAME"))]
-        self.userId = userId,
+        self.db = db
+        self.userId = userId
 
     def addLab(self, ipaddress: str, username: str, password: str):
         try:
