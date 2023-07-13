@@ -315,7 +315,6 @@ def containerRun(_id: str, username: str):
         if network["domainList"]:
             trafikLables.update(domainLableGenerator(username,network["domainList"]))
 
-        print(trafikLables)
 
         mqtt_client.publish("/topic/sample", f"build Id {imageId}........")
         mqtt_client.publish("/topic/sample", "container run started.....")

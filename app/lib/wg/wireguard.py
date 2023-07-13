@@ -1,9 +1,11 @@
 import os
 import subprocess
 from ...lib.models.networkModels import WireguardNetwork
-
+from ...database import mqtt_client
 
 # creating new wg peer file for the user
+
+
 def addWireguard(_id: str, name: str, peer: str, IPaddress: str, deviceName: str = "Linux lab", client: bool = False):
     try:
         # source dir for the client peer files save
@@ -45,6 +47,9 @@ def addWireguard(_id: str, name: str, peer: str, IPaddress: str, deviceName: str
         else:
             Network.addLabPeer()
 
+        # add the peer data in the host system
+        add_user_to_wireguard(name, peer, IPaddress, publickey)
+
         return {"message": f"{name}-{peer} peer added successfully", "status": True}
     except ValueError as e:
         raise (e)
@@ -72,3 +77,34 @@ def addWgPeer(IPaddress, publickey):
     return f'''[Peer]
 PublicKey = {publickey}
 AllowedIPs = {IPaddress}/32'''
+
+
+def add_user_to_wireguard(username, tag, IPaddress, publickey):
+    try:
+        # Define the command to add the user configuration to wg0.conf
+        command = f'echo "{os.getenv("ROOT_PASSWORD")}" | sudo -S  sh -c \'echo "\n#{username}-{tag}\n[Peer]\nPublicKey={publickey}\nAllowedIPs={IPaddress}/32" >> /etc/wireguard/wg0.conf\''
+
+        # Execute the command using subprocess
+        process = subprocess.Popen(
+            command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        if process.returncode == 0:
+            mqtt_client.publish(
+                "/topic/sample", f'User {username} added successfully')
+        else:
+            raise Exception(
+                f'Error adding user {username}. Error message: {stderr.decode()}')
+
+        # Reload WireGuard to apply the changes
+        reload_command = f'./source/restart.sh {os.getenv("ROOT_PASSWORD")}'
+        process = subprocess.Popen(
+            reload_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        if process.returncode == 0:
+            mqtt_client.publish("/topic/sample", f'{stdout.decode().strip()}')
+        else:
+            raise Exception(
+                f'Error adding user {username}. Error message: {stderr.decode()}')
+    except Exception as e:
+        raise (e)
