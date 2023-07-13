@@ -2,10 +2,9 @@ import os
 import subprocess
 from ...lib.models.networkModels import WireguardNetwork
 
+
 # creating new wg peer file for the user
-
-
-def addWireguard(_id: str, name: str, peer: str, IPaddress: str, deviceName: str = "Linux lab"):
+def addWireguard(_id: str, name: str, peer: str, IPaddress: str, deviceName: str = "Linux lab", client: bool = False):
     try:
         # source dir for the client peer files save
         source = os.path.join(os.getcwd(), "source",
@@ -41,9 +40,14 @@ def addWireguard(_id: str, name: str, peer: str, IPaddress: str, deviceName: str
 
         # this class function will add the wireguard network function
         Network = WireguardNetwork(_id, IPaddress, publickey, deviceName)
-        Network.addLabPeer()
+        if client:
+            Network.addPeer()
+        else:
+            Network.addLabPeer()
 
-        return {"message": addWgPeer(IPaddress, publickey), "status": True}
+        return {"message": f"{name}-{peer} peer added successfully", "status": True}
+    except ValueError as e:
+        raise (e)
     except Exception as e:
         raise (e)
 

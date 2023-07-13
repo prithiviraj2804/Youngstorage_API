@@ -1,18 +1,18 @@
-from fastapi import BackgroundTasks
-from fastapi import APIRouter, Depends
-from ..lib.docker.dockerGenerator import spawnContainer,reDeploy
+from fastapi import BackgroundTasks, status, Response, APIRouter, Depends
+from ..lib.docker.dockerGenerator import spawnContainer, reDeploy
 from ..lib.auth.jwt import signJWT, Authenticator, UserRole
 from ..database import db
-from bson import ObjectId
-
 router = APIRouter()
+
+# get the container status and details
 
 
 @router.get("/deploy")
 def getContainerData(data=Depends(Authenticator(True, UserRole.user).signupJWT)):
     try:
-        container = db.container.find_one({"_id": ObjectId(data["_id"])})
+        container = db.labs.find_one({"userId": data["_id"]})
         if container:
+            container["_id"] = str(container["_id"])
             return {"message": "container data", "status": True, "data": container}
         else:
             return {"message": "container data", "status": True, "data": []}
@@ -20,6 +20,7 @@ def getContainerData(data=Depends(Authenticator(True, UserRole.user).signupJWT))
         return {"message": str(e), "status": False}
 
 
+# post to deploy new Instance or redeploy the existing Instance
 @router.post("/deploy")
 def createContainer(background_task: BackgroundTasks, data=Depends(Authenticator(True, UserRole.user).signupJWT)):
     try:
@@ -30,5 +31,7 @@ def createContainer(background_task: BackgroundTasks, data=Depends(Authenticator
             return reDeploy(data["_id"], data["username"], "lab", background_task)
         else:  # container not already exist new instance will be created
             return spawnContainer(data["_id"], data["username"], "lab", background_task)
+    except ValueError as e:
+        return {"message": str(e), "status": False}
     except Exception as e:
         return {"message": str(e), "status": False}
