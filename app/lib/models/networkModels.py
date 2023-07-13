@@ -94,6 +94,9 @@ class DomainNetwork(NetworkModel):
     def addDomain(self):
         # Example: Save network model data to the database
         if (self.currentDomain < self.maxDomain):
+            existing_domain = self.db.network.find_one({"domainList.domainName":self.domainName})
+            if existing_domain:
+                raise ValueError(f"{self.domainName} already taken")
             self.domainList.append({
                 "domainName": self.domainName,
             })
@@ -114,5 +117,6 @@ class DomainNetwork(NetworkModel):
                                            "$set": {"domainList": self.domainList, "currentDomain": self.currentDomain}})
             else:
                 self.db.network.insert_one(document)
+            return self.currentDomain
         else:
             raise ValueError("max domain reached")
