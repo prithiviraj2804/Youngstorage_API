@@ -1,7 +1,9 @@
 from fastapi import BackgroundTasks, status, Response, APIRouter, Depends
 from ..lib.docker.dockerGenerator import spawnContainer, reDeploy
 from ..lib.auth.jwt import signJWT, Authenticator, UserRole
-from ..database import db
+from ..database import db, mqtt_client
+import subprocess
+
 router = APIRouter()
 
 # get the container status and details
@@ -33,5 +35,33 @@ def createContainer(background_task: BackgroundTasks, data=Depends(Authenticator
             return spawnContainer(data["_id"], data["username"], "lab", background_task)
     except ValueError as e:
         return {"message": str(e), "status": False}
+    except Exception as e:
+        return {"message": str(e), "status": False}
+
+
+@router.post("/upvscode")
+def upVScode(data=Depends(Authenticator(True, UserRole.user).signupJWT)):
+    try:
+        # instance name
+        username = data["username"]
+
+        # command to up vscode in web
+        command = 'docker exec -it nocturnalplay0 bash -c "source code-server.sh"'
+
+        # Execute the command using subprocess
+        process = subprocess.Popen(
+            command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
+
+        for i in str(stdout.decode()).strip().split("\r\n"):
+            mqtt_client.publish("/topic/sample", i)
+
+        # Check the command execution status
+        if process.returncode == 0:
+            # Print the command output
+            return {"message": "Command executed successfully", "status": True}
+        else:
+            return {"message": f'Command failed with exit code: {process.returncode}', "status": False}
+
     except Exception as e:
         return {"message": str(e), "status": False}
