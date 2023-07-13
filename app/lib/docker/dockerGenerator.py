@@ -10,11 +10,12 @@ from docker.errors import NotFound
 
 client = docker.from_env()
 
-# create new container or to redeploy
+# create new container
 
 
 def spawnContainer(_id: str, username: str, peer: str, background_task: BackgroundTasks):
     try:
+        mqtt_client.publish("/topic/sample", "New Instances Started.....")
         baselist = list(db.baselist.find())
         if len(baselist) == 1:
             ip = baselist[0]["ip"]
@@ -32,8 +33,10 @@ def spawnContainer(_id: str, username: str, peer: str, background_task: Backgrou
             lab = ContainerModels(_id)
             lab.addLab(ip, username, f"{username}@321")
 
+            #base list update for the ip issued log
             db.baselist.update_one({"_id": baselist[0]["_id"]}, {
                                    "$set": {"ip": ip, "ipissued": baselist[0]["ipissued"]+1, "no_client": baselist[0]["no_client"]+1}})
+
             source = os.path.join(os.getcwd(), "source")
 
             # create new docker file with giver username and peer vpn connection
@@ -63,6 +66,39 @@ EOF
 
             return {"message": "Container process in background", "status": True}
         return {"message": "Issue in baselist data find", "status": False}
+    except Exception as e:
+        raise (e)
+
+#redeploy the existing image 
+def reDeploy (_id: str, username: str, peer: str, background_task: BackgroundTasks):
+    try:
+        mqtt_client.publish("/topic/sample", "Container rebuild starts.....")
+        source = os.path.join(os.getcwd(), "source")
+        # create new docker file with giver username and peer vpn connection
+        with open(os.path.join(source, "Dockerfile"), "w")as dockerfile:
+            dockerfile.write(dockerGenerator(username, peer))
+            dockerfile.close()
+            
+        # create setup.sh file to run inside the docker container after container
+        # has been spawn
+        with open(os.path.join(source, "setup.sh"), "w")as setup:
+            setup.write(setupSh(username))
+            setup.close()
+
+        # create code-server.sh file for to enable code server
+        # has been spawn
+        with open(os.path.join(source, "code-server.sh"), "w")as codeServer:
+            codeServer.write(f'''#!/bin/bash
+su {username} <<EOF
+nohup code-server &
+EOF
+            ''')
+            codeServer.close()
+
+        # both image build and container run happens in single shot
+        # this will happens in the background task
+        background_task.add_task(imageBuild, username)
+        return {"message": "Container rebuild process in background", "status": True}
     except Exception as e:
         raise (e)
 
@@ -254,7 +290,8 @@ def containerRun(username: str):
         exContainer = client.containers.get(username)
         if exContainer.id:
             exContainer.remove(force=True)
-            mqtt_client.publish("/topic/sample", f"Removed existing container......")
+            mqtt_client.publish(
+                "/topic/sample", f"Removed existing container......")
             raise NotFound(f"{username} container removed")
 
     # container not found build new one
@@ -284,7 +321,6 @@ def containerRun(username: str):
         # Wait for the process to finish
         mqtt_client.publish(
             "/topic/sample", "container successfully running.....")
-    
 
     except Exception as e:
         mqtt_client.publish("/topic/sample", str(e))

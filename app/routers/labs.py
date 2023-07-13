@@ -1,6 +1,6 @@
 from fastapi import BackgroundTasks
 from fastapi import APIRouter, Depends
-from ..lib.docker.dockerGenerator import spawnContainer
+from ..lib.docker.dockerGenerator import spawnContainer,reDeploy
 from ..lib.auth.jwt import signJWT, Authenticator, UserRole
 from ..database import db
 from bson import ObjectId
@@ -27,7 +27,7 @@ def createContainer(background_task: BackgroundTasks, data=Depends(Authenticator
         container = db.labs.find_one({"userId": data["_id"]})
         # if container already exist redeploy happens
         if container:
-            return []
+            return reDeploy(data["_id"], data["username"], "lab", background_task)
         else:  # container not already exist new instance will be created
             return spawnContainer(data["_id"], data["username"], "lab", background_task)
     except Exception as e:
