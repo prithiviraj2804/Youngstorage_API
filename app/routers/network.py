@@ -37,8 +37,11 @@ def addUserPeer(devicename: Devices, data: dict = Depends(Authenticator(True, Us
                 network = db.network.find_one({"userId": str(data["_id"])})
                 status = {}
                 if network:
-                    status = addWireguard(data["_id"], data["username"],
+                    if network["currentPeer"] < network["maxPeer"]:
+                        status = addWireguard(data["_id"], data["username"],
                                           str(network["currentPeer"]+1), ip, deviceName=str(devicename.Name), client=True)
+                    else:
+                        raise ValueError("max peer reached")
                 else:
                     status = addWireguard(data["_id"], data["username"],
                                           "1", ip, deviceName=str(devicename.Name), client=True)
@@ -61,7 +64,7 @@ def addUserPeer(devicename: Devices, data: dict = Depends(Authenticator(True, Us
 def addUserPeer(domainname: Domain, data: dict = Depends(Authenticator(True, UserRole.user).signupJWT)):
     try:
         domain = DomainNetwork(str(data["_id"]), domainname.Name).addDomain()
-        return {"message": f"{domain} {domainname.Name} added successfully", "status": True}
+        return {"message": f"{domainname.Name} added successfully", "status": True}
     except ValueError as e:
         return {"message": str(e), "status": False}
     except Exception as e:
