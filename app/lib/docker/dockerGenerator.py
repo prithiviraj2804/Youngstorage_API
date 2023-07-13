@@ -1,7 +1,7 @@
 import os
 import subprocess
 from ..wg.wireguard import addWireguard
-from .traefik import labelGenerator
+from .traefik import labelGenerator,domainLableGenerator
 from ...database import db, mqtt_client
 from fastapi import BackgroundTasks
 from ...lib.models.labsModels import ContainerModels
@@ -33,7 +33,7 @@ def spawnContainer(_id: str, username: str, peer: str, background_task: Backgrou
             lab = ContainerModels(_id)
             lab.addLab(ip, username, f"{username}@321")
 
-            #base list update for the ip issued log
+            # base list update for the ip issued log
             db.baselist.update_one({"_id": baselist[0]["_id"]}, {
                                    "$set": {"ip": ip, "ipissued": baselist[0]["ipissued"]+1, "no_client": baselist[0]["no_client"]+1}})
 
@@ -62,15 +62,17 @@ EOF
 
             # both image build and container run happens in single shot
             # this will happens in the background task
-            background_task.add_task(imageBuild, username)
+            background_task.add_task(imageBuild, _id, username)
 
             return {"message": "Container process in background", "status": True}
         return {"message": "Issue in baselist data find", "status": False}
     except Exception as e:
         raise (e)
 
-#redeploy the existing image 
-def reDeploy (_id: str, username: str, peer: str, background_task: BackgroundTasks):
+# redeploy the existing image
+
+
+def reDeploy(_id: str, username: str, peer: str, background_task: BackgroundTasks):
     try:
         mqtt_client.publish("/topic/sample", "Container rebuild starts.....")
         source = os.path.join(os.getcwd(), "source")
@@ -78,7 +80,7 @@ def reDeploy (_id: str, username: str, peer: str, background_task: BackgroundTas
         with open(os.path.join(source, "Dockerfile"), "w")as dockerfile:
             dockerfile.write(dockerGenerator(username, peer))
             dockerfile.close()
-            
+
         # create setup.sh file to run inside the docker container after container
         # has been spawn
         with open(os.path.join(source, "setup.sh"), "w")as setup:
@@ -97,7 +99,7 @@ EOF
 
         # both image build and container run happens in single shot
         # this will happens in the background task
-        background_task.add_task(imageBuild, username)
+        background_task.add_task(imageBuild, _id, username)
         return {"message": "Container rebuild process in background", "status": True}
     except Exception as e:
         raise (e)
@@ -262,7 +264,7 @@ def IpRange65535(ipaddress):
 # docker image build function
 
 
-def imageBuild(username: str):
+def imageBuild(_id: str, username: str):
     try:
         source = os.path.join(os.getcwd(), "source")
         cmd = ["docker", "build", "-t", f"{username}", f"{source}"]
@@ -276,14 +278,14 @@ def imageBuild(username: str):
         process.wait()
         mqtt_client.publish("/topic/sample", "image build done!!")
         # docker run happens
-        containerRun(username)
+        containerRun(_id, username)
     except Exception as e:
         mqtt_client.publish("/topic/sample", str(e))
 
 # docker container run function
 
 
-def containerRun(username: str):
+def containerRun(_id: str, username: str):
     try:
 
         # container already exist flesh process
@@ -299,8 +301,22 @@ def containerRun(username: str):
         # get the build image id
         imageId = str(client.images.get(username).id)
 
+        # update vscode details in labs section
+        db.labs.update_one({"userId": _id}, {"$set": {
+                           "vsCode": f"https://{imageId[len(imageId)-32:]}.{os.getenv('DOMAIN_NAME')}", "vsPassword": f"{username}@321"}})
+
         # generate default trafik lable
         trafikLables = labelGenerator(imageId[len(imageId)-32:])
+
+
+
+        #if domain exist add domain lables in traefik
+        network = db.network.find_one({"userId": _id})
+        if network["domainList"]:
+            trafikLables.update(domainLableGenerator(username,network["domainList"]))
+
+        print(trafikLables)
+
         mqtt_client.publish("/topic/sample", f"build Id {imageId}........")
         mqtt_client.publish("/topic/sample", "container run started.....")
 
