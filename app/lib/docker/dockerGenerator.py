@@ -188,8 +188,7 @@ chmod 775 {username} #username variable
 chown -R {username}:{username} /home/{username}/htdocs #username variable
 adduser www-data {username} #username variable
 # echo "Options +FollowSymLinks +SymLinksIfOwnerMatch" > /home/{username}/htdocs/html/.htaccess #username variable
-cd /home/{username}/htdocs #username variable
-chmod o+x *
+chmod o+x /home/{username}/htdocs/* #username variable
 
 #chaning permissions to htconfig
 chown -R {username}:{username} /home/{username}/htconfig
@@ -227,13 +226,8 @@ npm i bcryptjs -g
 
 #username variable
 su {username} <<EOF 
-mkdir /home/{username}/.ssh/
 chown {username}:{username} .ssh/
-chmod go-w /home/{username}/
-chmod 700 /home/{username}/.ssh
-chmod 600 /home/{username}/.ssh/authorized_keys
 cd /home/{username} && ./init.sh
-echo {username}@321 | sudo -S service apache2 restart
 tail -f /dev/null
 EOF
 '''
