@@ -85,26 +85,25 @@ def add_user_to_wireguard(username, tag, IPaddress, publickey):
         command = f'echo "{os.getenv("ROOT_PASSWORD")}" | sudo -S  sh -c \'echo "\n#{username}-{tag}\n[Peer]\nPublicKey={publickey}\nAllowedIPs={IPaddress}/32" >> /etc/wireguard/wg0.conf\''
 
         # Execute the command using subprocess
-        process = subprocess.Popen(
+        process = subprocess.run(
             command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
 
         if process.returncode == 0:
             mqtt_client.publish(
                 "/topic/sample", f'User {username} added successfully')
         else:
             raise Exception(
-                f'Error adding user {username}. Error message: {stderr.decode()}')
+                f'Error adding user {username}. Error message: {process.stderr.decode()}')
 
         # Reload WireGuard to apply the changes
-        reload_command = f'./source/restart.sh {os.getenv("ROOT_PASSWORD")}'
-        process = subprocess.Popen(
+        reload_command = f'echo "{os.getenv("ROOT_PASSWORD")}" | sudo -S ./source/restart.sh'
+        process = subprocess.run(
             reload_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
+
         if process.returncode == 0:
-            mqtt_client.publish("/topic/sample", f'{stdout.decode().strip()}')
+            mqtt_client.publish("/topic/sample", f'{process.stdout.decode().strip()}')
         else:
             raise Exception(
-                f'Error adding user {username}. Error message: {stderr.decode()}')
+                f'Error adding user {username}. Error message: {process.stderr.decode()}')
     except Exception as e:
         raise (e)
