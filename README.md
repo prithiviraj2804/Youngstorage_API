@@ -53,6 +53,9 @@ MAIL_USERNAME = <username>
 MAIL_PASSWORD = <password>
 MAIL_DEFAULT_SENDER = <default send mail>
 MAIL_TITLE = <subject>
+
+#host system details
+ROOT_PASSWORD = <host password>
 ```
 
 ## Microservices 
@@ -83,21 +86,21 @@ rabbitmq-plugins enable rabbitmq_web_mqtt_examples
     - [x] signup
     - [x] userVerify
     - [x] singin
-    - [] forgot password
-    - [] email verify
-    - [] confrim password
+    - [ ] forgot password
+    - [ ] email verify
+    - [ ] confrim password
 - [x] labs
     - [x] linux(default = ubuntu)
     - [x] spawn new instance
     - [x] redeploy instance
     - [x] vs code enable
-    - [] plan to make different types of distributions
+    - [ ] plan to make different types of distributions
 - [x] network
     - [x] add lab peer(max = 1)
     - [x] user peer(max = 3)
     - [x] automatic wg sync
     - [x] add domain
-- [] services
-    - [] nodered
-    - [] dbs
-    - [] catching services
+- [ ] services
+    - [ ] nodered
+    - [ ] dbs
+    - [ ] catching services
