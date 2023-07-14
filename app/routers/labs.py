@@ -46,7 +46,7 @@ def upVScode(data=Depends(Authenticator(True, UserRole.user).signupJWT)):
         username = data["username"]
 
         # command to up vscode in web
-        command = 'docker exec -it nocturnalplay0 bash -c "source code-server.sh"'
+        command = f'docker exec -it {username} bash -c "source code-server.sh"'
 
         # Execute the command using subprocess
         process = subprocess.Popen(
