@@ -77,8 +77,7 @@ rabbitmq-plugins enable rabbitmq_mqtt
 rabbitmq-plugins enable rabbitmq_web_mqtt 
 rabbitmq-plugins enable rabbitmq_web_mqtt_examples
 ```
-** rabbitmq_web_mqtt (15675) **
-** mqtt (1883) **
+> **rabbitmq_web_mqtt (15675) mqtt (1883)**
 
 ## Task done
 
