@@ -6,7 +6,7 @@ from ...database import mqtt_client
 # creating new wg peer file for the user
 
 
-def addWireguard(_id: str, name: str, peer: str, IPaddress: str, deviceName: str = "Linux lab", client: bool = False):
+def addWireguard(_id: str, name: str, peer: str, IPaddress: str, deviceName: str = "Ubuntu lab", client: bool = False):
     try:
         # source dir for the client peer files save
         source = os.path.join(os.getcwd(), "source",

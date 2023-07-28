@@ -74,32 +74,13 @@ EOF
 
 def reDeploy(_id: str, username: str, peer: str, background_task: BackgroundTasks):
     try:
-        mqtt_client.publish("/topic/sample", "Container rebuild starts.....")
-        source = os.path.join(os.getcwd(), "source")
-        # create new docker file with giver username and peer vpn connection
-        with open(os.path.join(source, "Dockerfile"), "w")as dockerfile:
-            dockerfile.write(dockerGenerator(username, peer))
-            dockerfile.close()
-
-        # create setup.sh file to run inside the docker container after container
-        # has been spawn
-        with open(os.path.join(source, "setup.sh"), "w")as setup:
-            setup.write(setupSh(username))
-            setup.close()
-
-        # create code-server.sh file for to enable code server
-        # has been spawn
-        with open(os.path.join(source, "code-server.sh"), "w")as codeServer:
-            codeServer.write(f'''#!/bin/bash
-su {username} <<EOF
-nohup code-server &
-EOF
-            ''')
-            codeServer.close()
-
+        mqtt_client.publish("/topic/sample", "Container reDeploy starts.....")
+        image = client.images.get(username)
+        print(image.id)
+        # mqtt_client.publish("/topic/sample", "")
         # both image build and container run happens in single shot
         # this will happens in the background task
-        background_task.add_task(imageBuild, _id, username)
+        background_task.add_task(containerRun, _id, username)
         return {"message": "Container rebuild process in background", "status": True}
     except Exception as e:
         raise (e)
